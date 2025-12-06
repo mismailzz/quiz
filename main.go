@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 )
 
 type problem struct {
@@ -19,6 +20,7 @@ func main() {
 
 	// 1. Read the CSV file
 	filename := flag.String("csv", "problems.csv", "a csv file in the format of 'question,answer'")
+	timeLimit := flag.Int("limit", 5, "the time limit for the quiz in seconds")
 	flag.Parse()
 
 	// Read the file records
@@ -26,7 +28,7 @@ func main() {
 	quizProblems := parseFileRecords(fileRecords)
 
 	// 4. Run the quiz
-	correctAnswers, totalQuestions := runQuiz(quizProblems)
+	correctAnswers, totalQuestions := runQuiz(quizProblems, *timeLimit)
 	fmt.Printf("\nQuiz Completed! You scored %d out of %d.\n", correctAnswers, totalQuestions)
 
 }
@@ -65,27 +67,45 @@ func parseFileRecords(fileRecords [][]string) []problem {
 	return problems
 }
 
-func runQuiz(problems []problem) (correctAnswers int, totalQuestions int) {
+func runQuiz(problems []problem, timeLimit int) (correctAnswers int, totalQuestions int) {
 	// Quiz logic to be implemented
 	reader := bufio.NewReader(os.Stdin)
 	fmt.Println("Welcome to the Quiz!")
 	fmt.Println("---------------------")
 
+	// Set up the timer
+	timeout := time.NewTimer(time.Duration(timeLimit) * time.Second)
+
+	correctAnswers = 0
+	totalQuestions = 0
 	for _, p := range problems {
 		fmt.Printf("Question: %s = ?\n", p.question)
 		fmt.Print("-> ")
-		text, _ := reader.ReadString('\n')
-		// Remove any trailing newline characters
-		text = strings.TrimSpace(text)
 
-		if strings.Compare(p.answer, text) == 0 {
-			correctAnswers++
-			fmt.Println("Correct!")
-		} else {
-			fmt.Printf("Wrong! The correct answer is %s\n", p.answer)
+		answerCh := make(chan string)
+
+		// Start a goroutine to read user input (answers)
+		go func() {
+			text, _ := reader.ReadString('\n')
+			// Remove any trailing newline characters
+			text = strings.TrimSpace(text)
+			answerCh <- text
+		}()
+
+		select {
+		case answer := <-answerCh:
+			text := answer
+			if strings.Compare(p.answer, text) == 0 {
+				correctAnswers++
+				fmt.Println("Correct!")
+			} else {
+				fmt.Printf("Wrong! The correct answer is %s\n", p.answer)
+			}
+			totalQuestions++
+		case <-timeout.C:
+			fmt.Println("\nTime's up!")
+			return correctAnswers, totalQuestions
 		}
-		totalQuestions++
 	}
-
 	return correctAnswers, totalQuestions
 }
