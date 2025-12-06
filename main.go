@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"math/rand"
 	"os"
 	"strings"
 	"time"
@@ -21,11 +22,12 @@ func main() {
 	// 1. Read the CSV file
 	filename := flag.String("csv", "problems.csv", "a csv file in the format of 'question,answer'")
 	timeLimit := flag.Int("limit", 5, "the time limit for the quiz in seconds")
+	shuffle := flag.Bool("shuffle", false, "shuffle the quiz questions")
 	flag.Parse()
 
 	// Read the file records
 	fileRecords := readFile(*filename)
-	quizProblems := parseFileRecords(fileRecords)
+	quizProblems := parseFileRecords(fileRecords, *shuffle)
 
 	// 4. Run the quiz
 	correctAnswers, totalQuestions := runQuiz(quizProblems, *timeLimit)
@@ -53,7 +55,7 @@ func readFile(filename string) [][]string {
 	return records
 }
 
-func parseFileRecords(fileRecords [][]string) []problem {
+func parseFileRecords(fileRecords [][]string, shuffle bool) []problem {
 	problems := make([]problem, len(fileRecords))
 	for i, record := range fileRecords {
 		if len(record) < 2 { // if csv line doesn't have at least 2 fields or invalid
@@ -64,6 +66,13 @@ func parseFileRecords(fileRecords [][]string) []problem {
 			answer:   record[1],
 		}
 	}
+
+	if shuffle {
+		rand.Shuffle(len(problems), func(i, j int) {
+			problems[i], problems[j] = problems[j], problems[i]
+		})
+	}
+
 	return problems
 }
 
