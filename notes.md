@@ -1,6 +1,3 @@
-Sure! Here’s a clean, friendly, GitHub-ready **README.md–style summary** explaining the bug and the conceptual fix.
-You can paste this directly into your repo. 💛
-
 ---
 
 # 🐛 Quiz Input Timeout Bug — Root Cause & Fix Summary
