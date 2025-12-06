@@ -1,5 +1,11 @@
 package main
 
+/*
+BUG: When the timeout occurs, and the user transferred to another question
+but still, if the user gives the answer the program stuck (unless we give two answers before next timout occurs).
+This shows that previous iteration goroutine is still active and waiting for user input.
+*/
+
 import (
 	"bufio"
 	"encoding/csv"
