@@ -1,3 +1,5 @@
+
+
 ---
 
 # 🐛 Quiz Input Timeout Bug — Root Cause & Fix Summary
@@ -85,4 +87,3 @@ The quiz now behaves exactly as expected, even when the user answers late or aft
 
 ---
 
-If you want, I can also help you write the full `README.md` section or document the project more professionally—just let me know!
