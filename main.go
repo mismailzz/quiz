@@ -77,44 +77,41 @@ func parseFileRecords(fileRecords [][]string, shuffle bool) []problem {
 }
 
 func runQuiz(problems []problem, timeLimit int) (correctAnswers int, totalQuestions int) {
-	// Quiz logic to be implemented
 	reader := bufio.NewReader(os.Stdin)
 	fmt.Println("Welcome to the Quiz!")
 	fmt.Println("---------------------")
 
-	// Set up the timer
-	timeout := time.NewTimer(time.Duration(timeLimit) * time.Second)
-
-	correctAnswers = 0
-	totalQuestions = 0
 	for _, p := range problems {
 		fmt.Printf("Question: %s = ?\n", p.question)
 		fmt.Print("-> ")
 
-		answerCh := make(chan string)
+		// Flush any leftover buffered input before timing
+		reader = bufio.NewReader(os.Stdin)
 
-		// Start a goroutine to read user input (answers)
+		answerCh := make(chan string, 1)
+		questionTimer := time.NewTimer(time.Duration(timeLimit) * time.Second)
+
 		go func() {
-			text, _ := reader.ReadString('\n')
-			// Remove any trailing newline characters
+			text, _ := reader.ReadString('\n') // This the problem line
 			text = strings.TrimSpace(text)
 			answerCh <- text
 		}()
 
 		select {
 		case answer := <-answerCh:
-			text := answer
-			if strings.Compare(p.answer, text) == 0 {
+			if answer == p.answer {
 				correctAnswers++
 				fmt.Println("Correct!")
 			} else {
 				fmt.Printf("Wrong! The correct answer is %s\n", p.answer)
 			}
 			totalQuestions++
-		case <-timeout.C:
-			fmt.Println("\nTime's up!")
-			return correctAnswers, totalQuestions
+
+		case <-questionTimer.C:
+			fmt.Println("\n Time's up for this question!")
+			totalQuestions++
 		}
 	}
+
 	return correctAnswers, totalQuestions
 }
