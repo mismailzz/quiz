@@ -4,6 +4,10 @@ package main
 BUG: When the timeout occurs, and the user transferred to another question
 but still, if the user gives the answer the program stuck (unless we give two answers before next timout occurs).
 This shows that previous iteration goroutine is still active and waiting for user input.
+
+Problem Analysis:
+When the timer expires, the goroutine doing reader.ReadString('\n') is still blocked, waiting for input forever.
+That goroutine never dies, and the next question ends up having an extra goroutine from the previous round still listening on stdin.
 */
 
 import (
@@ -83,25 +87,23 @@ func parseFileRecords(fileRecords [][]string, shuffle bool) []problem {
 }
 
 func runQuiz(problems []problem, timeLimit int) (correctAnswers int, totalQuestions int) {
-	reader := bufio.NewReader(os.Stdin)
 	fmt.Println("Welcome to the Quiz!")
 	fmt.Println("---------------------")
+
+	answerCh := make(chan string, 1)
+	go func() {
+		reader := bufio.NewReader(os.Stdin)
+		for {
+			text, _ := reader.ReadString('\n')
+			answerCh <- strings.TrimSpace(text)
+		}
+	}()
 
 	for _, p := range problems {
 		fmt.Printf("Question: %s = ?\n", p.question)
 		fmt.Print("-> ")
 
-		// Flush any leftover buffered input before timing
-		reader = bufio.NewReader(os.Stdin)
-
-		answerCh := make(chan string, 1)
 		questionTimer := time.NewTimer(time.Duration(timeLimit) * time.Second)
-
-		go func() {
-			text, _ := reader.ReadString('\n') // This the problem line
-			text = strings.TrimSpace(text)
-			answerCh <- text
-		}()
 
 		select {
 		case answer := <-answerCh:
